@@ -26,7 +26,7 @@ const McpRequestPane = ({ item, collection, handleRun }) => {
   const activeTabUid = useSelector((state) => state.tabs.activeTabUid);
 
   const focusedTab = find(tabs, (t) => t.uid === activeTabUid);
-  const requestPaneTab = focusedTab?.requestPaneTab;
+  const requestPaneTab = focusedTab?.requestPaneTab || 'params';
 
   const selectTab = useCallback(
     (tab) => {
@@ -190,7 +190,7 @@ const McpRequestPane = ({ item, collection, handleRun }) => {
     }
   }, [requestPaneTab, item, collection, transport, request, body, displayedTheme, dispatch]);
 
-  if (!activeTabUid || !focusedTab?.uid || !requestPaneTab) {
+  if (!activeTabUid || !focusedTab?.uid) {
     return <div className="pb-4 px-4">An error occurred!</div>;
   }
 
