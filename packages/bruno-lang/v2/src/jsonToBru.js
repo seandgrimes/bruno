@@ -14,7 +14,7 @@ const stripLastLine = (text) => {
 };
 
 const jsonToBru = (json) => {
-  const { meta, http, grpc, ws, params, headers, metadata, auth, body, script, tests, vars, assertions, settings, docs, examples } = json;
+  const { meta, http, grpc, ws, mcp, params, headers, metadata, auth, body, script, tests, vars, assertions, settings, docs, examples } = json;
 
   let bru = '';
 
@@ -86,6 +86,36 @@ const jsonToBru = (json) => {
     if (grpc.methodType && grpc.methodType.length) {
       bru += `
   methodType: ${grpc.methodType}`;
+    }
+
+    bru += `
+}
+
+`;
+  }
+
+  if (mcp && (mcp.url || mcp.command)) {
+    bru += `mcp {
+  transport: ${mcp.transport || 'http'}`;
+
+    if (mcp.url && mcp.url.length) {
+      bru += `
+  url: ${mcp.url}`;
+    }
+
+    if (mcp.command && mcp.command.length) {
+      bru += `
+  command: ${mcp.command}`;
+    }
+
+    if (mcp.args && mcp.args.length) {
+      bru += `
+  args: ${mcp.args}`;
+    }
+
+    if (mcp.tool && mcp.tool.length) {
+      bru += `
+  tool: ${mcp.tool}`;
     }
 
     bru += `
@@ -651,6 +681,12 @@ ${indentString(body.sparql)}
         bru += '}\n\n';
       });
     }
+  }
+
+  if (body && body.mode === 'mcp' && body.mcp !== undefined) {
+    bru += `body:mcp {\n`;
+    bru += `${indentString(body.mcp || '{}')}`;
+    bru += '\n}\n\n';
   }
 
   let reqvars = _.get(vars, 'req');

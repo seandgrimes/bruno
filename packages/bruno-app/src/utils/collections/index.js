@@ -331,7 +331,8 @@ export const transformCollectionToSaveToExportAsFile = (collection, options = {}
             multipartForm: copyMultipartFormParams(si.request.body.multipartForm),
             file: copyFileParams(si.request.body.file),
             grpc: si.request.body.grpc,
-            ws: si.request.body.ws
+            ws: si.request.body.ws,
+            mcp: si.request.body.mcp
           },
           script: si.request.script,
           vars: si.request.vars,
@@ -343,6 +344,15 @@ export const transformCollectionToSaveToExportAsFile = (collection, options = {}
         if (isGrpcRequest) {
           di.request.methodType = si.request.methodType;
           di.request.protoPath = si.request.protoPath;
+          delete di.request.params;
+        }
+
+        if (si.type === 'mcp-request') {
+          di.request.transport = si.request.transport;
+          di.request.command = si.request.command;
+          di.request.args = si.request.args;
+          di.request.tool = si.request.tool;
+          delete di.request.method;
           delete di.request.params;
         }
 
@@ -739,8 +749,18 @@ export const transformRequestToSaveToFilesystem = (item) => {
     delete itemToSave.request.params;
   }
 
+  if (_item.type === 'mcp-request') {
+    itemToSave.request.transport = _item.request.transport;
+    itemToSave.request.command = _item.request.command;
+    itemToSave.request.args = _item.request.args;
+    itemToSave.request.tool = _item.request.tool;
+    delete itemToSave.request.method;
+    delete itemToSave.request.methodType;
+    delete itemToSave.request.params;
+  }
+
   // Only process params for non-gRPC requests
-  if (!['grpc-request', 'ws-request'].includes(_item.type)) {
+  if (!['grpc-request', 'ws-request', 'mcp-request'].includes(_item.type)) {
     each(_item.request.params, (param) => {
       itemToSave.request.params.push({
         uid: param.uid,
@@ -880,7 +900,7 @@ export const deleteItemInCollectionByPathname = (pathname, collection) => {
 };
 
 export const isItemARequest = (item) => {
-  return item.hasOwnProperty('request') && ['http-request', 'graphql-request', 'grpc-request', 'ws-request'].includes(item.type) && !item.items;
+  return item.hasOwnProperty('request') && ['http-request', 'graphql-request', 'grpc-request', 'ws-request', 'mcp-request'].includes(item.type) && !item.items;
 };
 
 export const isItemAFolder = (item) => {
@@ -1133,6 +1153,10 @@ export const getDefaultRequestPaneTab = (item) => {
 
   if (['ws-request', 'grpc-request'].includes(item.type)) {
     return 'body';
+  }
+
+  if (item.type === 'mcp-request') {
+    return 'params';
   }
 };
 

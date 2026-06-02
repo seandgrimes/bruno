@@ -34,6 +34,7 @@
     "@grpc/grpc-js": "^1.13.2",
     "@grpc/proto-loader": "^0.7.13",
     "@lydell/node-pty": "^1.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@usebruno/common": "0.1.0",
     "@usebruno/converters": "^0.1.0",
     "@usebruno/filestore": "^0.1.0",
@@ -82,7 +83,7 @@
     "dmg-license": "^1.0.11"
   },
   "devDependencies": {
-    "electron": "~37.6.1",
+    "electron": "^37.6.1",
     "electron-builder": "^24.13.3",
     "electron-devtools-installer": "^4.0.0"
   }

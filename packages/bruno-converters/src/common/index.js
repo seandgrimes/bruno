@@ -30,7 +30,7 @@ export const safeStringifyJSON = (obj, indent = false) => {
 };
 
 export const isItemARequest = (item) => {
-  return item.hasOwnProperty('request') && ['http-request', 'graphql-request'].includes(item.type) && !item.items;
+  return item.hasOwnProperty('request') && ['http-request', 'graphql-request', 'grpc-request', 'ws-request', 'mcp-request'].includes(item.type) && !item.items;
 };
 
 // a customized version of nanoid without using _ and -

@@ -1,6 +1,7 @@
 import type { HttpRequest } from './http';
 import type { GrpcRequest } from './grpc';
 import type { WebSocketRequest } from './websocket';
+import type { McpRequest } from './mcp';
 
 export type {
   HttpRequest,
@@ -23,4 +24,10 @@ export type {
   WebSocketMessage
 } from './websocket';
 
-export type Request = HttpRequest | GrpcRequest | WebSocketRequest;
+export type {
+  McpRequest,
+  McpRequestBody,
+  McpTransportType
+} from './mcp';
+
+export type Request = HttpRequest | GrpcRequest | WebSocketRequest | McpRequest;

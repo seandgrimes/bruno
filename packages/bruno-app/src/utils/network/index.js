@@ -338,3 +338,34 @@ export const getWsConnectionStatus = async (requestId) => {
     ipcRenderer.invoke('renderer:ws:connection-status', requestId).then(resolve).catch(reject);
   });
 };
+
+export const mcpConnect = async (item, collection, environment, runtimeVariables) => {
+  return new Promise((resolve, reject) => {
+    const { ipcRenderer } = window;
+    ipcRenderer
+      .invoke('renderer:mcp:connect', { item, collection, environment, runtimeVariables })
+      .then(resolve)
+      .catch(reject);
+  });
+};
+
+export const mcpDisconnect = async (requestId) => {
+  return new Promise((resolve, reject) => {
+    const { ipcRenderer } = window;
+    ipcRenderer.invoke('renderer:mcp:disconnect', requestId).then(resolve).catch(reject);
+  });
+};
+
+export const mcpListTools = async (requestId) => {
+  return new Promise((resolve, reject) => {
+    const { ipcRenderer } = window;
+    ipcRenderer.invoke('renderer:mcp:list-tools', requestId).then(resolve).catch(reject);
+  });
+};
+
+export const getMcpConnectionStatus = async (requestId) => {
+  return new Promise((resolve, reject) => {
+    const { ipcRenderer } = window;
+    ipcRenderer.invoke('renderer:mcp:connection-status', requestId).then(resolve).catch(reject);
+  });
+};

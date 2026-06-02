@@ -61,7 +61,9 @@ import {
   updateCollectionVar,
   addTransientDirectory,
   addSaveTransientRequestModal,
-  updatePathParam
+  updatePathParam,
+  mcpRequestSent,
+  mcpResponseReceived
 } from './index';
 
 import { each } from 'lodash';
@@ -3269,4 +3271,137 @@ export const closeTabs = ({ tabUids }) => async (dispatch, getState) => {
 export const reopenClosedTab = ({ collectionUid } = {}) => async (dispatch) => {
   dispatch(reopenLastClosedTab({ collectionUid }));
   await dispatch(ensureActiveTabInCurrentWorkspace());
+};
+
+export const newMcpRequest = (params) => (dispatch, getState) => {
+  const { requestName, filename, requestUrl, collectionUid, itemUid } = params;
+
+  return new Promise((resolve, reject) => {
+    const state = getState();
+    const collection = findCollectionByUid(state.collections.collections, collectionUid);
+    if (!collection) {
+      return reject(new Error('Collection not found'));
+    }
+
+    const item = {
+      uid: uuid(),
+      name: requestName,
+      filename,
+      type: 'mcp-request',
+      request: {
+        transport: 'http',
+        url: requestUrl || '',
+        command: '',
+        args: '',
+        tool: '',
+        headers: [],
+        body: {
+          mode: 'mcp',
+          mcp: '{}'
+        },
+        vars: {
+          req: [],
+          res: []
+        },
+        script: {
+          req: null,
+          res: null
+        },
+        assertions: [],
+        tests: null,
+        docs: null
+      }
+    };
+
+    const resolvedFilename = resolveRequestFilename(filename, collection.format);
+    const parentItem = itemUid ? findItemInCollection(collection, itemUid) : collection;
+
+    if (!parentItem) {
+      return reject(new Error('Parent item not found'));
+    }
+
+    const reqWithSameNameExists = find(
+      parentItem.items,
+      (i) => i.type !== 'folder' && trim(i.filename) === trim(resolvedFilename)
+    );
+
+    if (reqWithSameNameExists) {
+      return reject(new Error('Duplicate request names are not allowed under the same folder'));
+    }
+
+    const items = filter(parentItem.items, (i) => isItemAFolder(i) || isItemARequest(i));
+    item.seq = items.length + 1;
+    const fullName = path.join(parentItem.pathname, resolvedFilename);
+    const { ipcRenderer } = window;
+    ipcRenderer
+      .invoke('renderer:new-request', fullName, item)
+      .then(() => {
+        dispatch(
+          insertTaskIntoQueue({
+            uid: uuid(),
+            type: 'OPEN_REQUEST',
+            collectionUid,
+            itemPathname: fullName
+          })
+        );
+        resolve();
+      })
+      .catch(reject);
+  });
+};
+
+export const callMcpTool = (item, collectionUid) => (dispatch, getState) => {
+  const state = getState();
+  const { globalEnvironments, activeGlobalEnvironmentUid } = state.globalEnvironments;
+  const collection = findCollectionByUid(state.collections.collections, collectionUid);
+
+  return new Promise(async (resolve, reject) => {
+    if (!collection) {
+      return reject(new Error('Collection not found'));
+    }
+
+    const itemCopy = cloneDeep(item);
+    const globalEnvironmentVariables = getGlobalEnvironmentVariables({
+      globalEnvironments,
+      activeGlobalEnvironmentUid
+    });
+    const collectionCopy = cloneDeep(collection);
+    collectionCopy.globalEnvironmentVariables = globalEnvironmentVariables;
+    const environment = findEnvironmentInCollection(collectionCopy, collectionCopy.activeEnvironmentUid);
+
+    const tool = (itemCopy.draft ? itemCopy.draft.request : itemCopy.request)?.tool || '';
+    dispatch(mcpRequestSent({ itemUid: item.uid, collectionUid, tool }));
+
+    const { ipcRenderer } = window;
+    try {
+      const result = await ipcRenderer.invoke('renderer:mcp:call-tool', {
+        item: itemCopy,
+        collection: collectionCopy,
+        environment,
+        runtimeVariables: collectionCopy.runtimeVariables || {}
+      });
+
+      dispatch(
+        mcpResponseReceived({
+          itemUid: item.uid,
+          collectionUid,
+          result: result.result,
+          duration: result.duration,
+          error: result.success ? null : result.error
+        })
+      );
+      resolve(result);
+    } catch (error) {
+      dispatch(
+        mcpResponseReceived({
+          itemUid: item.uid,
+          collectionUid,
+          result: null,
+          duration: 0,
+          error: error.message
+        })
+      );
+      reject(error);
+    }
+  });
 };

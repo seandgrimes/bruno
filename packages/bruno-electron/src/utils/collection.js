@@ -469,13 +469,14 @@ const parseBruFileMeta = (data) => {
 
       // Transform to the format expected by bruno-app
       let requestType = metaJson.type;
-      if (requestType === 'http') {
-        requestType = 'http-request';
-      } else if (requestType === 'graphql') {
-        requestType = 'graphql-request';
-      } else {
-        requestType = 'http-request';
-      }
+      const bruTypeMap = {
+        http: 'http-request',
+        graphql: 'graphql-request',
+        grpc: 'grpc-request',
+        ws: 'ws-request',
+        mcp: 'mcp-request'
+      };
+      requestType = bruTypeMap[requestType] || 'http-request';
 
       const sequence = metaJson.seq;
       const transformedJson = {
@@ -516,12 +517,12 @@ const parseYmlFileMeta = (data) => {
     const yaml = require('js-yaml');
     const parsed = yaml.load(data);
 
-    if (!parsed || !parsed.meta) {
-      console.log('No "meta" section found in YAML file.');
+    // Support both legacy 'meta:' format and new 'info:' format
+    const metaJson = parsed?.meta || parsed?.info;
+    if (!parsed || !metaJson) {
+      console.log('No "meta" or "info" section found in YAML file.');
       return null;
     }
-
-    const metaJson = parsed.meta;
 
     // Transform to the format expected by bruno-app
     let requestType = metaJson.type;
@@ -529,7 +530,9 @@ const parseYmlFileMeta = (data) => {
       http: 'http-request',
       graphql: 'graphql-request',
       grpc: 'grpc-request',
-      ws: 'ws-request'
+      ws: 'ws-request',
+      websocket: 'ws-request',
+      mcp: 'mcp-request'
     };
     requestType = typeMap[requestType] || 'http-request';
 

@@ -34,9 +34,9 @@ const ANNOTATIONS_KEY = Symbol('annotations');
  *
  */
 const grammar = ohm.grammar(`Bru {
-  BruFile = (meta | http | grpc | ws | query | params | headers | metadata | auths | bodies | varsandassert | script | tests | settings | docs | example)*
+  BruFile = (meta | http | grpc | ws | mcp | query | params | headers | metadata | auths | bodies | varsandassert | script | tests | settings | docs | example)*
   auths = authawsv4 | authbasic | authbearer | authdigest | authNTLM | authOAuth1 | authOAuth2 | authwsse | authapikey | authOauth2Configs
-  bodies = bodyjson | bodytext | bodyxml | bodysparql | bodygraphql | bodygraphqlvars | bodyforms | body | bodygrpc | bodyws
+  bodies = bodyjson | bodytext | bodyxml | bodysparql | bodygraphql | bodygraphqlvars | bodyforms | body | bodygrpc | bodyws | bodymcp
   bodyforms = bodyformurlencoded | bodymultipart | bodyfile
   params = paramspath | paramsquery
   
@@ -113,6 +113,7 @@ const grammar = ohm.grammar(`Bru {
   http = get | post | put | delete | patch | options | head | connect | trace | httpcustom
   grpc = "grpc" dictionary
   ws = "ws" dictionary
+  mcp = "mcp" dictionary
   get = "get" dictionary
   post = "post" dictionary
   put = "put" dictionary
@@ -165,6 +166,7 @@ const grammar = ohm.grammar(`Bru {
   bodygraphqlvars = "body:graphql:vars" st* "{" nl* textblock tagend
   bodygrpc = "body:grpc" dictionary
   bodyws = "body:ws" dictionary
+  bodymcp = "body:mcp" st* "{" nl* textblock tagend
 
   bodyformurlencoded = "body:form-urlencoded" dictionary
   bodymultipart = "body:multipart-form" dictionary
@@ -580,6 +582,11 @@ const sem = grammar.createSemantics().addAttribute('ast', {
   ws(_1, dictionary) {
     return {
       ws: mapPairListToKeyValPair(dictionary.ast)
+    };
+  },
+  mcp(_1, dictionary) {
+    return {
+      mcp: mapPairListToKeyValPair(dictionary.ast)
     };
   },
   get(_1, dictionary) {
@@ -1151,6 +1158,14 @@ const sem = grammar.createSemantics().addAttribute('ast', {
           name: messageName,
           content: messageContent
         }]
+      }
+    };
+  },
+  bodymcp(_1, _2, _3, _4, textblock, _5) {
+    return {
+      body: {
+        mode: 'mcp',
+        mcp: outdentString(textblock.sourceString)
       }
     };
   },

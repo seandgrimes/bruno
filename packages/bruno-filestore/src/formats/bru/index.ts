@@ -27,6 +27,9 @@ export const parseBruRequest = (data: string | any, parsed: boolean = false): an
       case 'ws':
         requestType = 'ws-request';
         break;
+      case 'mcp':
+        requestType = 'mcp-request';
+        break;
       default:
         requestType = 'http-request';
     }
@@ -36,6 +39,7 @@ export const parseBruRequest = (data: string | any, parsed: boolean = false): an
     const urlPath: Record<typeof requestType, string> = {
       'grpc-request': 'grpc.url',
       'ws-request': 'ws.url',
+      'mcp-request': 'mcp.url',
       'default': 'http.url'
     };
     const transformedJson = {
@@ -92,6 +96,17 @@ export const parseBruRequest = (data: string | any, parsed: boolean = false): an
           }
         ])
       });
+    } else if (requestType === 'mcp-request') {
+      transformedJson.request.transport = _.get(json, 'mcp.transport', 'http');
+      transformedJson.request.url = _.get(json, 'mcp.url', '');
+      transformedJson.request.command = _.get(json, 'mcp.command', '');
+      transformedJson.request.args = _.get(json, 'mcp.args', '');
+      transformedJson.request.tool = _.get(json, 'mcp.tool', '');
+      transformedJson.request.body = _.get(json, 'body', {
+        mode: 'mcp',
+        mcp: '{}'
+      });
+      delete transformedJson.request.method;
     } else {
       // For HTTP and GraphQL
       (transformedJson.request as any).params = _.get(json, 'params', []);
@@ -130,6 +145,9 @@ export const stringifyBruRequest = (json: any): string => {
         break;
       case 'ws-request':
         type = 'ws';
+        break;
+      case 'mcp-request':
+        type = 'mcp';
         break;
       default:
         type = 'http';
@@ -200,11 +218,26 @@ export const stringifyBruRequest = (json: any): string => {
           }
         ])
       });
+    } else if (type === 'mcp') {
+      bruJson.mcp = {
+        transport: _.get(json, 'request.transport', 'http'),
+        url: _.get(json, 'request.url', ''),
+        command: _.get(json, 'request.command', ''),
+        args: _.get(json, 'request.args', ''),
+        tool: _.get(json, 'request.tool', '')
+      };
+
+      bruJson.body = _.get(json, 'request.body', {
+        mode: 'mcp',
+        mcp: '{}'
+      });
     }
 
     // Common fields for all request types
     if (type === 'grpc') {
       bruJson.metadata = _.get(json, 'request.headers', []); // Use metadata for gRPC
+    } else if (type === 'mcp') {
+      bruJson.headers = _.get(json, 'request.headers', []); // HTTP headers for MCP http transport
     } else {
       bruJson.headers = _.get(json, 'request.headers', []); // Use headers for HTTP/GraphQL
     }

@@ -152,6 +152,15 @@ const initiatedWsResponse = {
   trailers: []
 };
 
+const initiatedMcpResponse = {
+  status: 'PENDING',
+  statusText: 'PENDING',
+  duration: 0,
+  result: null,
+  isError: false,
+  error: null
+};
+
 export const collectionsSlice = createSlice({
   name: 'collections',
   initialState,
@@ -1756,7 +1765,24 @@ export const collectionsSlice = createSlice({
               item.draft.request.body.ws = action.payload.content;
               break;
             }
+            case 'mcp': {
+              item.draft.request.body.mcp = action.payload.content;
+              break;
+            }
           }
+        }
+      }
+    },
+    updateMcpRequestField: (state, action) => {
+      const collection = findCollectionByUid(state.collections, action.payload.collectionUid);
+      if (collection) {
+        const item = findItemInCollection(collection, action.payload.itemUid);
+        if (item && item.type === 'mcp-request') {
+          if (!item.draft) {
+            item.draft = cloneDeep(item);
+          }
+          const { field, value } = action.payload;
+          item.draft.request[field] = value;
         }
       }
     },
@@ -3598,6 +3624,43 @@ export const collectionsSlice = createSlice({
 
       item.response = updatedResponse;
     },
+    mcpRequestSent: (state, action) => {
+      const { itemUid, collectionUid, tool } = action.payload;
+      const collection = findCollectionByUid(state.collections, collectionUid);
+      if (!collection) return;
+      const item = findItemInCollection(collection, itemUid);
+      if (!item) return;
+
+      item.requestSent = { tool, timestamp: Date.now() };
+      item.response = { ...initiatedMcpResponse, statusText: 'CALLING' };
+    },
+    mcpResponseReceived: (state, action) => {
+      const { itemUid, collectionUid, result, duration, error } = action.payload;
+      const collection = findCollectionByUid(state.collections, collectionUid);
+      if (!collection) return;
+      const item = findItemInCollection(collection, itemUid);
+      if (!item) return;
+
+      if (error) {
+        item.response = {
+          ...initiatedMcpResponse,
+          status: 'ERROR',
+          statusText: 'ERROR',
+          isError: true,
+          error,
+          duration: duration || 0
+        };
+      } else {
+        item.response = {
+          ...initiatedMcpResponse,
+          status: 'OK',
+          statusText: 'OK',
+          result,
+          duration: duration || 0,
+          isError: result?.isError || false
+        };
+      }
+    },
     wsUpdateResponseSortOrder: (state, action) => {
       const collection = findCollectionByUid(state.collections, action.payload.collectionUid);
 
@@ -3825,6 +3888,9 @@ export const {
   runWsRequestEvent,
   wsResponseReceived,
   wsUpdateResponseSortOrder,
+  mcpRequestSent,
+  mcpResponseReceived,
+  updateMcpRequestField,
 
   /* Response Example Actions - Start */
   addResponseExample,

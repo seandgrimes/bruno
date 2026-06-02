@@ -3,6 +3,7 @@ import stringifyHttpRequest from './items/stringifyHttpRequest';
 import stringifyGraphqlRequest from './items/stringifyGraphQLRequest';
 import stringifyGrpcRequest from './items/stringifyGrpcRequest';
 import stringifyWebsocketRequest from './items/stringifyWebsocketRequest';
+import stringifyMcpRequest from './items/stringifyMcpRequest';
 import stringifyScript from './items/stringifyScript';
 
 const stringifyItem = (item: BrunoItem): string => {
@@ -19,6 +20,9 @@ const stringifyItem = (item: BrunoItem): string => {
 
       case 'ws-request':
         return stringifyWebsocketRequest(item);
+
+      case 'mcp-request':
+        return stringifyMcpRequest(item);
 
       case 'js':
         return stringifyScript(item);

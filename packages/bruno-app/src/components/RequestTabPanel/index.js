@@ -8,7 +8,7 @@ import GrpcRequestPane from 'components/RequestPane/GrpcRequestPane/index';
 import ResponsePane from 'components/ResponsePane';
 import GrpcResponsePane from 'components/ResponsePane/GrpcResponsePane';
 import { findItemInCollection, findItemInCollectionByPathname, areItemsLoading } from 'utils/collections';
-import { cancelRequest, sendRequest } from 'providers/ReduxStore/slices/collections/actions';
+import { cancelRequest, sendRequest, callMcpTool } from 'providers/ReduxStore/slices/collections/actions';
 import { updateGqlDocsOpen } from 'providers/ReduxStore/slices/tabs';
 import RequestNotFound from './RequestNotFound';
 import QueryUrl from 'components/RequestPane/QueryUrl/index';
@@ -32,6 +32,9 @@ import ExampleNotFound from './ExampleNotFound';
 import WsQueryUrl from 'components/RequestPane/WsQueryUrl';
 import WSRequestPane from 'components/RequestPane/WSRequestPane';
 import WSResponsePane from 'components/ResponsePane/WsResponsePane';
+import McpQueryUrl from 'components/RequestPane/McpQueryUrl';
+import McpRequestPane from 'components/RequestPane/McpRequestPane';
+import McpResponsePane from 'components/ResponsePane/McpResponsePane';
 import { useTabPaneBoundaries } from 'hooks/useTabPaneBoundaries/index';
 import useKeybinding from 'hooks/useKeybinding';
 import { ScopedPersistenceProvider } from 'hooks/usePersistedState/PersistedScopeProvider';
@@ -65,7 +68,7 @@ const RequestTabPanel = () => {
   const isVerticalLayout = preferences?.layout?.responsePaneOrientation === 'vertical';
   const isConsoleOpen = useSelector((state) => state.logs.isConsoleOpen);
 
-  const isRequestTab = focusedTab && ['request', 'http-request', 'grpc-request', 'ws-request', 'graphql-request'].includes(focusedTab.type);
+  const isRequestTab = focusedTab && ['request', 'http-request', 'grpc-request', 'ws-request', 'graphql-request', 'mcp-request'].includes(focusedTab.type);
   useKeybinding('sendRequest', (e) => {
     e?.preventDefault?.();
     e?.stopPropagation?.();
@@ -366,6 +369,7 @@ const RequestTabPanel = () => {
   }
   const isGrpcRequest = item?.type === 'grpc-request';
   const isWsRequest = item?.type === 'ws-request';
+  const isMcpRequest = item?.type === 'mcp-request';
 
   if (focusedTab.type === 'collection-runner') {
     return <RunnerResults collection={collection} />;
@@ -451,6 +455,14 @@ const RequestTabPanel = () => {
       toast.error('Please enter a valid WebSocket URL');
       return;
     }
+
+    if (isMcpRequest) {
+      dispatch(callMcpTool(item, collection.uid)).catch((err) =>
+        toast.error(err?.message || 'MCP tool call failed')
+      );
+      return;
+    }
+
     if (item.requestState !== 'sending' && item.requestState !== 'queued') {
       dispatch(sendRequest(item, collection.uid)).catch((err) =>
         toast.custom((t) => <NetworkError onClose={() => toast.dismiss(t.id)} />, {
@@ -464,6 +476,9 @@ const RequestTabPanel = () => {
     }
     if (isWsRequest) {
       return <WsQueryUrl item={item} collection={collection} handleRun={handleRun} />;
+    }
+    if (isMcpRequest) {
+      return <McpQueryUrl item={item} collection={collection} handleRun={handleRun} />;
     }
     return <QueryUrl item={item} collection={collection} handleRun={handleRun} />;
   };
@@ -486,6 +501,8 @@ const RequestTabPanel = () => {
         return <GrpcRequestPane item={item} collection={collection} handleRun={handleRun} />;
       case 'ws-request':
         return <WSRequestPane item={item} collection={collection} handleRun={handleRun} />;
+      case 'mcp-request':
+        return <McpRequestPane item={item} collection={collection} handleRun={handleRun} />;
       default:
         return null;
     }
@@ -497,6 +514,8 @@ const RequestTabPanel = () => {
         return <GrpcResponsePane item={item} collection={collection} response={item.response} />;
       case 'ws-request':
         return <WSResponsePane item={item} collection={collection} response={item.response} />;
+      case 'mcp-request':
+        return <McpResponsePane item={item} collection={collection} />;
       default:
         return <ResponsePane item={item} collection={collection} response={item.response} />;
     }
