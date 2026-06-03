@@ -51,7 +51,8 @@ const RequestTab = ({ tab, collection, tabIndex, collectionRequestTabs, folderUi
       || tab.type === 'http-request'
       || tab.type === 'graphql-request'
       || tab.type === 'grpc-request'
-      || tab.type === 'ws-request';
+      || tab.type === 'ws-request'
+      || tab.type === 'mcp-request';
 
     if (!isRequestType || !tab.pathname || !item?.uid || tab.uid === item.uid) {
       return;
@@ -69,6 +70,8 @@ const RequestTab = ({ tab, collection, tabIndex, collectionRequestTabs, folderUi
         return 'WS';
       case 'graphql-request':
         return 'GQL';
+      case 'mcp-request':
+        return 'MCP';
       default:
         return item.draft ? get(item, 'draft.request.method') : get(item, 'request.method');
     }
@@ -152,7 +155,9 @@ const RequestTab = ({ tab, collection, tabIndex, collectionRequestTabs, folderUi
       ...theme.request.methods,
       ...theme.request
     };
-    return colorMap[method.toLocaleLowerCase()];
+    const key = method.toLocaleLowerCase();
+    if (key === 'mcp') return colorMap['ws'];
+    return colorMap[key];
   };
 
   const handleCloseCollectionSettings = (event) => {
@@ -206,7 +211,7 @@ const RequestTab = ({ tab, collection, tabIndex, collectionRequestTabs, folderUi
 
   // Close tab shortcut — draft-aware, only active for the focused tab
   useKeybinding('closeTab', () => {
-    if (tab.type === 'request' || tab.type === 'grpc-request' || tab.type === 'ws-request' || tab.type === 'graphql-request') {
+    if (tab.type === 'request' || tab.type === 'grpc-request' || tab.type === 'ws-request' || tab.type === 'graphql-request' || tab.type === 'mcp-request') {
       if (hasChanges) {
         setShowConfirmClose(true);
       } else {
