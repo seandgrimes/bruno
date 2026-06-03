@@ -43,6 +43,9 @@ const Wrapper = styled.div`
   .method-graphql {
     color: ${(props) => props.theme.request.gql};
   }
+  .method-mcp {
+    color: ${(props) => props.theme.request.ws};
+  }
 `;
 
 export default Wrapper;

@@ -47,6 +47,26 @@ const StyledWrapper = styled.div`
     }
   }
 
+  .tool-select {
+    background-color: ${(props) => props.theme.requestTabPanel.url.bg};
+    border-left: ${(props) => props.theme.requestTabPanel.url.border};
+    color: inherit;
+    font-size: 0.8rem;
+    outline: none;
+    min-width: 140px;
+    max-width: 240px;
+    cursor: pointer;
+
+    &:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    option {
+      background-color: ${(props) => props.theme.requestTabPanel.url.bg};
+    }
+  }
+
   .connection-status-strip {
     animation: pulse 1.5s ease-in-out infinite;
     background-color: ${(props) => props.theme.colors.text.green};
