@@ -11,7 +11,7 @@ import { useDispatch } from 'react-redux';
 import { isMacOS } from 'utils/common/platform';
 import { hasRequestChanges } from 'utils/collections';
 import { mcpConnect, mcpDisconnect, getMcpConnectionStatus } from 'utils/network/index';
-import { getAllVariables, getPropertyFromDraftOrRequest } from 'utils/collections/index';
+import { getPropertyFromDraftOrRequest } from 'utils/collections/index';
 import StyledWrapper from './StyledWrapper';
 
 const CONNECTION_STATUS = {
@@ -49,20 +49,26 @@ const McpQueryUrl = ({ item, collection, handleRun }) => {
 
   const handleConnect = async () => {
     setConnectionStatus(CONNECTION_STATUS.CONNECTING);
-    const allVars = getAllVariables(collection, item);
 
     try {
-      await mcpConnect(
+      const result = await mcpConnect(
         item.draft ? { ...item, request: item.draft.request } : item,
         collection,
         null,
-        allVars
+        collection.runtimeVariables || {}
       );
+
+      if (result && !result.success) {
+        setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
+        toast.error(`Connection failed: ${result.error}`);
+        return;
+      }
+
       setConnectionStatus(CONNECTION_STATUS.CONNECTED);
       toast.success('Connected to MCP server');
     } catch (err) {
       setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
-      toast.error(`MCP connection failed: ${err.message}`);
+      toast.error(`Connection failed: ${err.message}`);
     }
   };
 
